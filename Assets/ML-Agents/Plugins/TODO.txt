@@ -1,0 +1,4 @@
+﻿Download and import the Unity TensorFlow Plugin :
+https://s3.amazonaws.com/unity-ml-agents/0.3/TFSharpPlugin.unitypackage
+
+(It's too large for git)
