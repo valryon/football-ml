@@ -12,8 +12,7 @@ public class FootballAgent : Agent
 
   private bool hasScored;
   private Vector3 ballStartPosition;
-  private int rewardsGrantedForDirection;
-  private bool shouldShoot;
+  private bool lastRightDir;
   private float timeSinceReset;
 
   private void Start()
@@ -41,10 +40,9 @@ public class FootballAgent : Agent
 
     ball.isKinematic = true;
     ball.transform.position = transform.position + ballStartPosition;
-
-    rewardsGrantedForDirection = 0;
-    shouldShoot = false;
+    
     timeSinceReset = 0f;
+    lastRightDir = true;
   }
 
   public override void CollectObservations()
@@ -52,7 +50,7 @@ public class FootballAgent : Agent
     AddVectorObs(player.transform.rotation.y);
     AddVectorObs(goal.transform.position.x);
     AddVectorObs(goal.transform.position.z);
-    AddVectorObs(timeSinceReset);
+    AddVectorObs(ball.isKinematic ? 1 : 0);
   }
 
   public override void AgentAction(float[] vectorAction, string textAction)
@@ -61,27 +59,25 @@ public class FootballAgent : Agent
     {
       player.transform.Rotate(new Vector3(0, 1, 0), vectorAction[0]);
 
-      float delta = GetDelta(transform.forward);
+      float delta = GetDelta();
       float absDelta = Mathf.Abs(delta);
 
       // Right direction -> reward
       if (vectorAction[0] != 0)
       {
-        // Move to goal
         bool rightDirection = (vectorAction[0] == -1f * Mathf.Sign(delta));
-        if (rightDirection && rewardsGrantedForDirection < 15)
+        if (rightDirection && lastRightDir)
         {
-          SetReward(0.05f);
-          rewardsGrantedForDirection++;
+          if (absDelta < GOAL_SIZE)
+          {
+            SetReward(2);
+          }
+          else
+          {
+            SetReward(0.5f);
+          }
         }
-
-        // Reward finding goal
-        if (absDelta < (GOAL_SIZE - 0.15f))
-        {
-          shouldShoot = true;
-          SetReward(0.1f);
-          rewardsGrantedForDirection = 99;
-        }
+        lastRightDir = rightDirection;
       }
 
       if (vectorAction[1] > 0 && ball.isKinematic && timeSinceReset > 0.5f)
@@ -89,12 +85,11 @@ public class FootballAgent : Agent
         // How close to the right angle?
         if (absDelta < GOAL_SIZE)
         {
-          SetReward(2);
+          SetReward(10);
         }
         else
         {
-          // Don't shoot if goal not found
-          SetReward(shouldShoot ? -2 : -1);
+          SetReward(-10);
         }
 
         Shoot();
@@ -103,7 +98,7 @@ public class FootballAgent : Agent
       if (goal.HasScored && hasScored == false)
       {
         hasScored = true;
-        SetReward(1f);
+        SetReward(5);
       }
 
     }
@@ -130,8 +125,8 @@ public class FootballAgent : Agent
     ball.AddForce(player.transform.rotation * new Vector3(-1000, 0, 0));
   }
 
-  private float GetDelta(Vector3 fwd)
+  private float GetDelta()
   {
-    return Vector3.Angle(Vector3.Normalize(goal.transform.position - player.transform.position), fwd) - 90f;
+    return Vector3.Angle(Vector3.Normalize(goal.transform.position - player.transform.position), transform.forward) - 90f;
   }
 }
