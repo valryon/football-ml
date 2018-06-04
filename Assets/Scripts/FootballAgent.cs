@@ -10,6 +10,7 @@ public class FootballAgent : Agent
 
   private bool hasScored;
   private Vector3 ballStartPosition;
+  private float timeSinceReset;
 
   private void Start()
   {
@@ -18,6 +19,7 @@ public class FootballAgent : Agent
 
   private void Update()
   {
+    timeSinceReset += Time.deltaTime;
     if (ball.isKinematic)
     {
       ball.transform.position = transform.position + (player.transform.rotation * ballStartPosition);
@@ -34,6 +36,8 @@ public class FootballAgent : Agent
 
     ball.isKinematic = true;
     ball.transform.position = transform.position + ballStartPosition;
+
+    timeSinceReset = 0f;
   }
 
   public override void CollectObservations()
@@ -49,31 +53,38 @@ public class FootballAgent : Agent
     {
       player.transform.Rotate(new Vector3(0, 1, 0), vectorAction[0]);
 
+      float delta = GetDelta(transform.forward);
+      float absDelta = Mathf.Abs(delta);
+
+      // Right direction -> reward
       if (vectorAction[0] != 0)
       {
-        // How close to the right angle?
-        float delta = GetDelta(transform.forward);
-        float absDelta = Mathf.Abs(delta);
-
-        // Reward if getting closer & in the right direction 
-        bool rightDirection = (vectorAction[0] == -1 * Mathf.Sign(delta));
-        if (absDelta < 10f)
+        bool rightDirection = (vectorAction[0] == -1f * Mathf.Sign(delta));
+        if (rightDirection && absDelta > 0.5f)
         {
-          float r = (10f - absDelta) * 0.05f;
-          float p = -1 * (absDelta / 10f) * 0.5f;
-          SetReward(rightDirection ? r : p);
+          SetReward(0.1f);
         }
       }
 
-      if (vectorAction[1] > 0 && ball.isKinematic)
+      if (vectorAction[1] > 0 && ball.isKinematic && timeSinceReset > 0.5f)
       {
+        // How close to the right angle?
+        if (absDelta < 6f)
+        {
+          SetReward(0.5f + (1f - (absDelta / 6f)));
+        }
+        else
+        {
+          SetReward(-1);
+        }
+
         Shoot();
       }
 
       if (goal.HasScored && hasScored == false)
       {
         hasScored = true;
-        SetReward(10f);
+        SetReward(1f);
       }
 
     }
@@ -88,7 +99,7 @@ public class FootballAgent : Agent
       if (ball.transform.position.y < -1)
       {
         Done();
-        SetReward(goal.HasScored ? 0f : -5f);
+        SetReward(goal.HasScored ? 0f : -1f);
       }
     }
 

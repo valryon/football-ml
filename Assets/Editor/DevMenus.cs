@@ -25,7 +25,7 @@ public static class DevMenus  {
     PlayerSettings.SetScriptingDefineSymbolsForGroup(BuildTargetGroup.Standalone, "ENABLE_TENSORFLOW");
   }
 
-  [MenuItem("FootML/Set exertnal mode")]
+  [MenuItem("FootML/Set external mode")]
   public static void SetExternal()
   {
     foreach (var b in GameObject.FindObjectsOfType<Brain>())
