@@ -358,7 +358,10 @@ public abstract class Agent : MonoBehaviour
     {
         cumulativeReward += (reward - this.reward);
         this.reward = reward;
-    }
+#if UNITY_EDITOR
+    Debug.Log("Rewarded " + reward);
+#endif
+  }
 
     /// <summary>
     /// Increments the step and episode rewards by the provided value.

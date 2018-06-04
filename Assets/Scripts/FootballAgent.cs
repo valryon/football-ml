@@ -8,6 +8,7 @@ public class FootballAgent : Agent
   public FootballGoal goal;
   public Rigidbody ball;
 
+  private bool hasScored;
   private Vector3 ballStartPosition;
 
   private void Start()
@@ -17,7 +18,7 @@ public class FootballAgent : Agent
 
   private void Update()
   {
-    if(ball.isKinematic)
+    if (ball.isKinematic)
     {
       ball.transform.position = transform.position + (player.transform.rotation * ballStartPosition);
     }
@@ -27,6 +28,7 @@ public class FootballAgent : Agent
   {
     base.AgentReset();
 
+    hasScored = false;
     goal.Reset();
     player.transform.rotation = Quaternion.identity;
 
@@ -47,20 +49,33 @@ public class FootballAgent : Agent
     {
       player.transform.Rotate(new Vector3(0, 1, 0), vectorAction[0]);
 
-      if (player.transform.rotation.eulerAngles.y < -90)
+      if (vectorAction[0] != 0)
       {
-        SetReward(-0.1f);
-      }
-      else if (player.transform.rotation.eulerAngles.y > 90)
-      {
-        SetReward(-0.1f);
+        // How close to the right angle?
+        float delta = GetDelta(transform.forward);
+        float absDelta = Mathf.Abs(delta);
+
+        // Reward if getting closer & in the right direction 
+        bool rightDirection = (vectorAction[0] == -1 * Mathf.Sign(delta));
+        if (absDelta < 10f)
+        {
+          float r = (10f - absDelta) * 0.05f;
+          float p = -1 * (absDelta / 10f) * 0.5f;
+          SetReward(rightDirection ? r : p);
+        }
       }
 
       if (vectorAction[1] > 0 && ball.isKinematic)
       {
         Shoot();
-        SetReward(0.1f);
       }
+
+      if (goal.HasScored && hasScored == false)
+      {
+        hasScored = true;
+        SetReward(10f);
+      }
+
     }
     else
     {
@@ -73,7 +88,7 @@ public class FootballAgent : Agent
       if (ball.transform.position.y < -1)
       {
         Done();
-        SetReward(goal.HasScored ? 1f : -1f);
+        SetReward(goal.HasScored ? 0f : -5f);
       }
     }
 
@@ -84,5 +99,10 @@ public class FootballAgent : Agent
     ball.isKinematic = false;
 
     ball.AddForce(player.transform.rotation * new Vector3(-1000, 0, 0));
+  }
+
+  private float GetDelta(Vector3 fwd)
+  {
+    return Vector3.Angle(Vector3.Normalize(goal.transform.position - player.transform.position), fwd) - 90f;
   }
 }

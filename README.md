@@ -8,7 +8,7 @@ A Unity + Machine learning experiment.
 
 Change Brain Type to `External`.
 
-Build for Linux with `Run In Background` enabled and the awful `Resolution Dialog` disabled.
+Build for Linux x86_64 with `Run In Background` enabled and the awful `Resolution Dialog` disabled.
 
 Build in the `unity-volume` folder.
 
@@ -20,7 +20,12 @@ Create the docker container
 
 ### Internal use of training data
 
+If not done yet, download and import the [Unity TensorFlow Plugin](https://s3.amazonaws.com/unity-ml-agents/0.3/TFSharpPlugin.unitypackage)
+(It's too large for git)
+
 Change brain to `Internal`.
+
+Set scripting symbol `ENABLE_TENSORFLOW`. Make sure you're using .NET 4.6.
 
 ## Versions
 
