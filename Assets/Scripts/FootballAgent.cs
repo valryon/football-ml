@@ -11,6 +11,7 @@ public class FootballAgent : Agent
   private bool hasScored;
   private Vector3 ballStartPosition;
   private float timeSinceReset;
+  private int rewardsGrantedForDirection;
 
   private void Start()
   {
@@ -38,13 +39,14 @@ public class FootballAgent : Agent
     ball.transform.position = transform.position + ballStartPosition;
 
     timeSinceReset = 0f;
+    rewardsGrantedForDirection = 0;
   }
 
   public override void CollectObservations()
   {
     AddVectorObs(player.transform.rotation.y);
-    AddVectorObs(ball.transform.position);
-    AddVectorObs(goal.transform.position);
+    AddVectorObs(goal.transform.position.x);
+    AddVectorObs(goal.transform.position.z);
   }
 
   public override void AgentAction(float[] vectorAction, string textAction)
@@ -60,9 +62,10 @@ public class FootballAgent : Agent
       if (vectorAction[0] != 0)
       {
         bool rightDirection = (vectorAction[0] == -1f * Mathf.Sign(delta));
-        if (rightDirection && absDelta > 0.5f)
+        if (rightDirection && absDelta > 0.5f && rewardsGrantedForDirection < 10)
         {
-          SetReward(0.1f);
+          SetReward(0.25f);
+          rewardsGrantedForDirection++;
         }
       }
 
@@ -99,7 +102,6 @@ public class FootballAgent : Agent
       if (ball.transform.position.y < -1)
       {
         Done();
-        SetReward(goal.HasScored ? 0f : -1f);
       }
     }
 
