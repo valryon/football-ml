@@ -2,6 +2,8 @@
 
 A Unity + Machine learning experiment.
 
+![GIF](footml.gif)
+
 ## How to launch
 
 ### Training
