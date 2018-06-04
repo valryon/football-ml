@@ -4,14 +4,17 @@ using UnityEngine;
 
 public class FootballAgent : Agent
 {
+  const float GOAL_SIZE = 2.9f;
+
   public GameObject player;
   public FootballGoal goal;
   public Rigidbody ball;
 
   private bool hasScored;
   private Vector3 ballStartPosition;
-  private float timeSinceReset;
   private int rewardsGrantedForDirection;
+  private bool shouldShoot;
+  private float timeSinceReset;
 
   private void Start()
   {
@@ -21,6 +24,7 @@ public class FootballAgent : Agent
   private void Update()
   {
     timeSinceReset += Time.deltaTime;
+
     if (ball.isKinematic)
     {
       ball.transform.position = transform.position + (player.transform.rotation * ballStartPosition);
@@ -38,8 +42,9 @@ public class FootballAgent : Agent
     ball.isKinematic = true;
     ball.transform.position = transform.position + ballStartPosition;
 
-    timeSinceReset = 0f;
     rewardsGrantedForDirection = 0;
+    shouldShoot = false;
+    timeSinceReset = 0f;
   }
 
   public override void CollectObservations()
@@ -47,6 +52,7 @@ public class FootballAgent : Agent
     AddVectorObs(player.transform.rotation.y);
     AddVectorObs(goal.transform.position.x);
     AddVectorObs(goal.transform.position.z);
+    AddVectorObs(timeSinceReset);
   }
 
   public override void AgentAction(float[] vectorAction, string textAction)
@@ -61,24 +67,34 @@ public class FootballAgent : Agent
       // Right direction -> reward
       if (vectorAction[0] != 0)
       {
+        // Move to goal
         bool rightDirection = (vectorAction[0] == -1f * Mathf.Sign(delta));
-        if (rightDirection && absDelta > 0.5f && rewardsGrantedForDirection < 10)
+        if (rightDirection && rewardsGrantedForDirection < 15)
         {
-          SetReward(0.25f);
+          SetReward(0.05f);
           rewardsGrantedForDirection++;
+        }
+
+        // Reward finding goal
+        if (absDelta < (GOAL_SIZE - 0.15f))
+        {
+          shouldShoot = true;
+          SetReward(0.1f);
+          rewardsGrantedForDirection = 99;
         }
       }
 
       if (vectorAction[1] > 0 && ball.isKinematic && timeSinceReset > 0.5f)
       {
         // How close to the right angle?
-        if (absDelta < 6f)
+        if (absDelta < GOAL_SIZE)
         {
-          SetReward(0.5f + (1f - (absDelta / 6f)));
+          SetReward(2);
         }
         else
         {
-          SetReward(-1);
+          // Don't shoot if goal not found
+          SetReward(shouldShoot ? -2 : -1);
         }
 
         Shoot();
